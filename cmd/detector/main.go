@@ -6,16 +6,18 @@ import (
 	"log"
 
 	"p2p-detector/internal/capture"
-
-	"github.com/google/gopacket"
 )
 
 func main() {
 	deviceName := flag.String("device", "", "Network device to capture packets")
+	listDevices := flag.Bool("list-devices", false, "List available network devices")
 	autoDetect := flag.Bool("auto", false, "Automatically detect network device")
 	debug := flag.Bool("debug", false, "Enable debug mode with packet logging")
 	flag.Parse()
-
+	if *listDevices {
+		printDevices()
+		return
+	}
 	if *autoDetect {
 		device, err := capture.AutoDetectDevice()
 		if err != nil {
@@ -30,13 +32,27 @@ func main() {
 	if *debug {
 		log.Println("Debug mode enabled")
 	}
-	handle, err := capture.PacketCapture(*deviceName)
+	packetCapture, err := capture.NewPacketCapture(*deviceName)
 	if err != nil {
 		log.Fatal("Error starting packet capture:", err)
 	}
-	defer handle.Close()
-	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-	for packet := range packetSource.Packets() {
-		fmt.Println(packet)
+	defer packetCapture.Close()
+	// go packetCapture.Start()
+	// packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+	// for packet := range packetSource.Packets() {
+	// 	fmt.Println(packet)
+	// }
+}
+
+func printDevices() {
+	devices, err := capture.ListDevices()
+	if err != nil {
+		log.Fatal("Error listing devices:", err)
+	}
+	for _, device := range devices {
+		if len(device.Addresses) != 0 {
+			fmt.Println(device.Name)
+			fmt.Printf("\t%s\n\t%s\n", device.Description, device.Addresses)
+		}
 	}
 }

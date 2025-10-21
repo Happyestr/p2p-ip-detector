@@ -50,11 +50,10 @@ func main() {
 
 	// fmt.Println(analyzer)
 	// go packetCapture.Start()
+	analyzer := analyzer.NewP2PAnalyzer(localIPs)
 	packetCapture.OnPacket(func(pkt capture.PacketInfo) {
-		fmt.Println(pkt)
-		if analyzer.IsStunPacket(pkt.Data) {
-			fmt.Println("STUN packet detected")
-		}
+		fmt.Println(pkt.SrcIP, pkt.DstIP)
+		analyzer.AnalyzePacket(pkt)
 	})
 	go packetCapture.Start()
 	sigChan := make(chan os.Signal, 1)

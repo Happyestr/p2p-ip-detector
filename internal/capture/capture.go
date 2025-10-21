@@ -23,7 +23,7 @@ type PacketCapture struct {
 }
 
 func NewPacketCapture(deviceName string) (*PacketCapture, error) {
-	handle, err := pcap.OpenLive(deviceName, 1600, true, pcap.BlockForever)
+	handle, err := pcap.OpenLive(deviceName, 1600, false, pcap.BlockForever)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open device %s: %v", deviceName, err)
 	}

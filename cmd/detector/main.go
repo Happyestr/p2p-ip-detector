@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"p2p-detector/internal/analyzer"
 	"p2p-detector/internal/capture"
 )
 
@@ -42,6 +43,8 @@ func main() {
 		log.Fatal("Error getting local IPs:", err)
 	}
 	fmt.Println(localIPs)
+	analyzer := analyzer.NewP2PAnalyzer(localIPs)
+	fmt.Println(analyzer)
 	// go packetCapture.Start()
 	// packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	// for packet := range packetSource.Packets() {
@@ -54,8 +57,8 @@ func getLocalIPsFromDevices() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list devices: %v", err)
 	}
-	var localIPs []string
-	seenIPs := make(map[string]bool)
+	localIPs := make([]string, 0, 10)
+	seenIPs := make(map[string]bool, 10)
 	for _, device := range devices {
 		for _, addr := range device.Addresses {
 			if addr.IP == nil || addr.IP.IsLoopback() {
@@ -66,7 +69,7 @@ func getLocalIPsFromDevices() ([]string, error) {
 				if !seenIPs[ipStr] {
 					seenIPs[ipStr] = true
 					localIPs = append(localIPs, ipStr)
-					log.Printf("   Found interface: %s - %s\n", device.Name, ipStr)
+					fmt.Println(len(localIPs), cap(localIPs), len(seenIPs))
 				}
 			}
 		}

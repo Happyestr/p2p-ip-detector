@@ -44,11 +44,16 @@ func AutoDetectDevice() (string, error) {
 		return "", err
 	}
 	for _, device := range devices {
+		if len(device.Addresses) == 0 {
+			continue
+		}
 		for _, addr := range device.Addresses {
 			if addr.IP.IsLoopback() || addr.IP.IsPrivate() {
 				continue
 			}
-			return device.Name, nil
+			if ipv4 := addr.IP.To4(); ipv4 != nil {
+				return device.Name, nil
+			}
 		}
 	}
 	return "", fmt.Errorf("no suitable device found")
@@ -70,22 +75,31 @@ func (pc *PacketCapture) Start() {
 }
 
 func (pc *PacketCapture) extractPacketInfo(packet gopacket.Packet) *PacketInfo {
-	ipLayer := packet.Layer(layers.LayerTypeIPv4).(*layers.IPv4)
+	// Этот кусок кода мог выдать панику, если в пакете не было IPv4 слоя
+	ipLayer := packet.Layer(layers.LayerTypeIPv4)
 	if ipLayer == nil {
 		return nil
 	}
-	udpLayer := packet.Layer(layers.LayerTypeUDP).(*layers.UDP)
+	ip, ok := ipLayer.(*layers.IPv4)
+	if !ok {
+		return nil
+	}
+	udpLayer := packet.Layer(layers.LayerTypeUDP)
 	if udpLayer == nil {
+		return nil
+	}
+	udp, ok := udpLayer.(*layers.UDP)
+	if !ok {
 		return nil
 	}
 	// fmt.Println(ipLayer.DstIP, ipLayer.SrcIP)
 	// fmt.Println(udpLayer.SrcPort, udpLayer.DstPort, udpLayer.Payload)
 	return &PacketInfo{
-		SrcIP:   ipLayer.SrcIP.String(),
-		DstIP:   ipLayer.DstIP.String(),
-		SrcPort: uint16(udpLayer.SrcPort),
-		DstPort: uint16(udpLayer.DstPort),
-		Data:    udpLayer.Payload,
+		SrcIP:   ip.SrcIP.String(),
+		DstIP:   ip.DstIP.String(),
+		SrcPort: uint16(udp.SrcPort),
+		DstPort: uint16(udp.DstPort),
+		Data:    udp.Payload,
 	}
 }
 

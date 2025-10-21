@@ -37,11 +37,41 @@ func main() {
 		log.Fatal("Error starting packet capture:", err)
 	}
 	defer packetCapture.Close()
+	localIPs, err := getLocalIPsFromDevices()
+	if err != nil {
+		log.Fatal("Error getting local IPs:", err)
+	}
+	fmt.Println(localIPs)
 	// go packetCapture.Start()
 	// packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	// for packet := range packetSource.Packets() {
 	// 	fmt.Println(packet)
 	// }
+}
+
+func getLocalIPsFromDevices() ([]string, error) {
+	devices, err := capture.ListDevices()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list devices: %v", err)
+	}
+	var localIPs []string
+	seenIPs := make(map[string]bool)
+	for _, device := range devices {
+		for _, addr := range device.Addresses {
+			if addr.IP == nil || addr.IP.IsLoopback() {
+				continue
+			}
+			if ipv4 := addr.IP.To4(); ipv4 != nil {
+				ipStr := ipv4.String()
+				if !seenIPs[ipStr] {
+					seenIPs[ipStr] = true
+					localIPs = append(localIPs, ipStr)
+					log.Printf("   Found interface: %s - %s\n", device.Name, ipStr)
+				}
+			}
+		}
+	}
+	return localIPs, nil
 }
 
 func printDevices() {

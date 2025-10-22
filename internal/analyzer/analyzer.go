@@ -68,9 +68,27 @@ func (a *P2PAnalyzer) AnalyzePacket(pkt capture.PacketInfo) {
 	if !a.localIPs[pkt.SrcIP] && a.localIPs[pkt.DstIP] {
 		return
 	}
-	fmt.Printf("P2P STUN: %s:%d → %s:%d\n",
-		pkt.SrcIP, pkt.SrcPort,
-		pkt.DstIP, pkt.DstPort)
+	key := fmt.Sprintf("%s:%d", pkt.DstIP, pkt.DstPort)
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	conn, exists := a.connections[key]
+	if !exists {
+		conn = &P2PConnection{
+			PeerIP:      pkt.DstIP,
+			PeerPort:    pkt.DstPort,
+			LocalIP:     pkt.SrcIP,
+			LocalPort:   pkt.SrcPort,
+			PacketCount: 0,
+		}
+		a.connections[key] = conn
+		if a.onDetected != nil {
+			a.onDetected(*conn)
+		}
+		fmt.Printf("P2P stun: %s:%d → %s:%d\n",
+			pkt.SrcIP, pkt.SrcPort,
+			pkt.DstIP, pkt.DstPort)
+	}
+	conn.PacketCount++
 }
 
 func isStunServerPort(port uint16) bool {
@@ -113,6 +131,23 @@ func hasAttribute(data []byte, attrType uint16) bool {
 		pos += 4 + ((attrLen + 3) & ^3)                                  // следующий атрибут (выравнивание до 4 байт)
 	}
 	return false
+}
+
+func (a *P2PAnalyzer) OnP2PDetected(callback func(P2PConnection)) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.onDetected = callback
+}
+
+func (a *P2PAnalyzer) GetConnections() []P2PConnection {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	conns := make([]P2PConnection, 0, len(a.connections))
+	for _, conn := range a.connections {
+		conns = append(conns, *conn)
+	}
+	return conns
 }
 
 // // Первые 2 байта

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>p2p-detector</title>
+</head>
+<body>
+    <h1 style="text-align:center;">p2p-detector</h1>
+    <div id="ips" style="text-align:center; margin-top:40px;"></div>
+    <script>
+        const ipsDiv = document.getElementById('ips');
+        let ws;
+        function connect() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(protocol + '//' + window.location.host + '/ws');
+            ws.onmessage = (event) => {
+                const conn = JSON.parse(event.data);
+                const ip = conn.PeerIP + ':' + conn.PeerPort;
+                const el = document.createElement('div');
+                el.textContent = ip;
+                ipsDiv.insertBefore(el, ipsDiv.firstChild);
+            };
+            ws.onclose = () => setTimeout(connect, 3000);
+        }
+        connect();
+    </script>
+</body>
+</html>

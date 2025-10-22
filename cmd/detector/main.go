@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"p2p-detector/internal/analyzer"
+	"p2p-detector/internal/api"
 	"p2p-detector/internal/capture"
 )
 
@@ -36,11 +37,7 @@ func main() {
 	if *debug {
 		log.Println("Debug mode enabled")
 	}
-	packetCapture, err := capture.NewPacketCapture(*deviceName)
-	if err != nil {
-		log.Fatal("Error starting packet capture:", err)
-	}
-	defer packetCapture.Close()
+
 	localIPs, err := getLocalIPsFromDevices()
 	if err != nil {
 		log.Fatal("Error getting local IPs:", err)
@@ -51,6 +48,17 @@ func main() {
 	// fmt.Println(analyzer)
 	// go packetCapture.Start()
 	analyzer := analyzer.NewP2PAnalyzer(localIPs)
+	webServer := api.NewServer(analyzer)
+	go func() {
+		if err := webServer.Start("localhost:8080"); err != nil {
+			log.Fatal("Server start error:", err)
+		}
+	}()
+	packetCapture, err := capture.NewPacketCapture(*deviceName)
+	if err != nil {
+		log.Fatal("Error starting packet capture:", err)
+	}
+	defer packetCapture.Close()
 	packetCapture.OnPacket(func(pkt capture.PacketInfo) {
 		// fmt.Printf("%s %d \t %s %d          %d\n", pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort, len(pkt.Data))
 		analyzer.AnalyzePacket(pkt)

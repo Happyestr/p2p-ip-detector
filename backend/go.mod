@@ -1,4 +1,4 @@
-module p2p-detector
+module backend
 
 go 1.25
 

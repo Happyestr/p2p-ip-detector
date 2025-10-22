@@ -8,9 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"p2p-detector/internal/analyzer"
-	"p2p-detector/internal/api"
-	"p2p-detector/internal/capture"
+	"backend/internal/analyzer"
+	"backend/internal/api"
+	"backend/internal/capture"
 )
 
 func main() {

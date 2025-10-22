@@ -1,8 +1,8 @@
 package analyzer
 
 import (
+	"backend/internal/capture"
 	"fmt"
-	"p2p-detector/internal/capture"
 	"sync"
 )
 
@@ -20,15 +20,6 @@ type P2PAnalyzer struct {
 	localIPs    map[string]bool
 	onDetected  func(P2PConnection)
 }
-
-type STUNMessageType uint16
-
-const (
-	STUNBindingRequest    STUNMessageType = 0x0001 // Запрос (от пира)
-	STUNBindingResponse   STUNMessageType = 0x0101 // Ответ (от сервера или пира)
-	STUNBindingErrorResp  STUNMessageType = 0x0111 // Ошибка
-	STUNBindingIndication STUNMessageType = 0x0011 // Индикация (keep-alive)
-)
 
 func NewP2PAnalyzer(localIPs []string) *P2PAnalyzer {
 	localIPMap := make(map[string]bool)
@@ -65,7 +56,7 @@ func (a *P2PAnalyzer) AnalyzePacket(pkt capture.PacketInfo) {
 	if isStunServerPort(pkt.DstPort) || isStunServerPort(pkt.SrcPort) { //фильтрация стан серверов по порту
 		return
 	}
-	if !a.localIPs[pkt.SrcIP] && a.localIPs[pkt.DstIP] {
+	if !a.localIPs[pkt.SrcIP] || a.localIPs[pkt.DstIP] {
 		return
 	}
 	key := fmt.Sprintf("%s:%d", pkt.DstIP, pkt.DstPort)
@@ -149,11 +140,3 @@ func (a *P2PAnalyzer) GetConnections() []P2PConnection {
 	}
 	return conns
 }
-
-// // Первые 2 байта
-// func getStunType(data []byte) STUNMessageType {
-// 	if len(data) < 2 {
-// 		return 0
-// 	}
-// 	return STUNMessageType((uint16(data[0]) << 8) | uint16(data[1])) // первые 2 байта - тип
-// }

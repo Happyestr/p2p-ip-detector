@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"sync"
 
-	"p2p-detector/internal/analyzer"
+	"backend/internal/analyzer"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -46,7 +46,7 @@ func (s *Server) Start(addr string) error {
 
 // обработка главной страницы
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "web/index.html")
+	http.ServeFile(w, r, "../frontend/web/index.html")
 }
 
 // обработка соединений

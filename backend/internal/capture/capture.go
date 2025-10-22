@@ -110,7 +110,6 @@ func (pc *PacketCapture) Start() {
 }
 
 func (pc *PacketCapture) extractPacketInfo(packet gopacket.Packet) *PacketInfo {
-	// Этот кусок кода мог выдать панику, если в пакете не было IPv4 слоя
 	ipLayer := packet.Layer(layers.LayerTypeIPv4)
 	if ipLayer == nil {
 		return nil

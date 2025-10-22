@@ -52,6 +52,11 @@ func AutoDetectDevice() (string, error) {
 			continue
 		}
 		desc := strings.ToLower(device.Description)
+		if strings.Contains(desc, "vmware") ||
+			strings.Contains(desc, "bluetooth") ||
+			strings.Contains(desc, "virtualbox") {
+			continue
+		}
 		// Ethernet
 		if strings.Contains(desc, "ethernet") ||
 			strings.Contains(desc, "realtek") ||

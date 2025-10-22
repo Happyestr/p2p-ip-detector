@@ -52,7 +52,7 @@ func main() {
 	// go packetCapture.Start()
 	analyzer := analyzer.NewP2PAnalyzer(localIPs)
 	packetCapture.OnPacket(func(pkt capture.PacketInfo) {
-		fmt.Printf("%s %d \t %s %d          %d\n", pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort, len(pkt.Data))
+		// fmt.Printf("%s %d \t %s %d          %d\n", pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort, len(pkt.Data))
 		analyzer.AnalyzePacket(pkt)
 	})
 	go packetCapture.Start()

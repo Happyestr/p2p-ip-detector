@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"fmt"
 	"p2p-detector/internal/capture"
 	"sync"
 )
@@ -53,17 +54,31 @@ func NewP2PAnalyzer(localIPs []string) *P2PAnalyzer {
 // байты 4+: значение атрибута
 
 func (a *P2PAnalyzer) AnalyzePacket(pkt capture.PacketInfo) {
-	if !isStunPacket(pkt.Data) {
+	if !isStunPacket(pkt.Data) { // проверка стан пакет ли (если нет то не относится)
 		// fmt.Println("Не STUN пакет")
 		return
 	}
-	if isStunServerPacket(pkt.Data) {
+	if isStunServerPacket(pkt.Data) { // фильтрация пакетов от стан серверов по содержимому (уже не надо т.к входящие не получаю)
 		// fmt.Printf("STUN сервер: %s\n", pkt.SrcIP)
 		return
 	}
-	// fmt.Printf("P2P STUN: %s:%d → %s:%d\n",
-	// 	pkt.SrcIP, pkt.SrcPort,
-	// 	pkt.DstIP, pkt.DstPort)
+	if isStunServerPort(pkt.DstPort) || isStunServerPort(pkt.SrcPort) { //фильтрация стан серверов по порту
+		return
+	}
+	if !a.localIPs[pkt.SrcIP] && a.localIPs[pkt.DstIP] {
+		return
+	}
+	fmt.Printf("P2P STUN: %s:%d → %s:%d\n",
+		pkt.SrcIP, pkt.SrcPort,
+		pkt.DstIP, pkt.DstPort)
+}
+
+func isStunServerPort(port uint16) bool {
+	return port == 443 || // STUN over HTTPS
+		port == 3478 || // Стандартный STUN UDP
+		port == 5349 || // STUN over TLS
+		port == 80 || // HTTP
+		port < 1024 // Все привилегированные порты
 }
 
 // Magic Cookie (0x2112A442) (4-7 байты)
@@ -100,10 +115,10 @@ func hasAttribute(data []byte, attrType uint16) bool {
 	return false
 }
 
-// Первые 2 байта
-func getStunType(data []byte) STUNMessageType {
-	if len(data) < 2 {
-		return 0
-	}
-	return STUNMessageType((uint16(data[0]) << 8) | uint16(data[1])) // первые 2 байта - тип
-}
+// // Первые 2 байта
+// func getStunType(data []byte) STUNMessageType {
+// 	if len(data) < 2 {
+// 		return 0
+// 	}
+// 	return STUNMessageType((uint16(data[0]) << 8) | uint16(data[1])) // первые 2 байта - тип
+// }

@@ -45,14 +45,14 @@ func main() {
 	if err != nil {
 		log.Fatal("Error getting local IPs:", err)
 	}
-	fmt.Println(localIPs)
+	// fmt.Println(localIPs)
 	// analyzer := analyzer.NewP2PAnalyzer(localIPs)
 
 	// fmt.Println(analyzer)
 	// go packetCapture.Start()
 	analyzer := analyzer.NewP2PAnalyzer(localIPs)
 	packetCapture.OnPacket(func(pkt capture.PacketInfo) {
-		fmt.Println(pkt.SrcIP, pkt.DstIP)
+		fmt.Printf("%s %d \t %s %d          %d\n", pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort, len(pkt.Data))
 		analyzer.AnalyzePacket(pkt)
 	})
 	go packetCapture.Start()
@@ -90,8 +90,9 @@ func printDevices() {
 	if err != nil {
 		log.Fatal("Error listing devices:", err)
 	}
+	// fmt.Println(devices)
 	for _, device := range devices {
-		if len(device.Addresses) != 0 {
+		if len(device.Addresses) != 0 && device.Addresses[0].IP != nil && !device.Addresses[0].IP.IsLoopback() {
 			fmt.Println(device.Name)
 			fmt.Printf("\t%s\n\t%s\n", device.Description, device.Addresses)
 		}

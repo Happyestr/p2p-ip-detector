@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"fmt"
 	"p2p-detector/internal/capture"
 	"sync"
 )
@@ -55,14 +54,16 @@ func NewP2PAnalyzer(localIPs []string) *P2PAnalyzer {
 
 func (a *P2PAnalyzer) AnalyzePacket(pkt capture.PacketInfo) {
 	if !isStunPacket(pkt.Data) {
-		fmt.Println("Не STUN пакет")
+		// fmt.Println("Не STUN пакет")
 		return
 	}
 	if isStunServerPacket(pkt.Data) {
-		fmt.Printf("STUN сервер: %s\n", pkt.SrcIP)
+		// fmt.Printf("STUN сервер: %s\n", pkt.SrcIP)
 		return
 	}
-	fmt.Println("STUN клиентский пакет", pkt)
+	// fmt.Printf("P2P STUN: %s:%d → %s:%d\n",
+	// 	pkt.SrcIP, pkt.SrcPort,
+	// 	pkt.DstIP, pkt.DstPort)
 }
 
 // Magic Cookie (0x2112A442) (4-7 байты)

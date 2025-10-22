@@ -2,6 +2,7 @@ package capture
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -23,7 +24,7 @@ type PacketCapture struct {
 }
 
 func NewPacketCapture(deviceName string) (*PacketCapture, error) {
-	handle, err := pcap.OpenLive(deviceName, 1600, false, pcap.BlockForever)
+	handle, err := pcap.OpenLive(deviceName, 65536, true, pcap.BlockForever)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open device %s: %v", deviceName, err)
 	}
@@ -43,18 +44,47 @@ func AutoDetectDevice() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	var ethernetDevices []string
+	var wifiDevices []string
+	var otherDevices []string
 	for _, device := range devices {
-		if len(device.Addresses) == 0 {
+		if len(device.Addresses) == 0 || device.Addresses[0].IP == nil || device.Addresses[0].IP.IsLoopback() {
 			continue
 		}
-		for _, addr := range device.Addresses {
-			if addr.IP.IsLoopback() || addr.IP.IsPrivate() {
+		desc := strings.ToLower(device.Description)
+		// Ethernet
+		if strings.Contains(desc, "ethernet") ||
+			strings.Contains(desc, "realtek") ||
+			strings.Contains(desc, "intel") && strings.Contains(desc, "connection") ||
+			strings.Contains(desc, "gigabit") ||
+			strings.Contains(desc, "controller") && !strings.Contains(desc, "wi-fi") {
+			if !strings.Contains(desc, "virtual") {
+				ethernetDevices = append(ethernetDevices, device.Name)
 				continue
 			}
-			if ipv4 := addr.IP.To4(); ipv4 != nil {
-				return device.Name, nil
+		}
+		// Wi-Fi
+		if strings.Contains(desc, "wi-fi") ||
+			strings.Contains(desc, "wifi") ||
+			strings.Contains(desc, "wireless") ||
+			strings.Contains(desc, "802.11") {
+			// пропуск виртуальных
+			if !strings.Contains(desc, "virtual") &&
+				!strings.Contains(desc, "microsoft wi-fi direct") {
+				wifiDevices = append(wifiDevices, device.Name)
+				continue
 			}
 		}
+		otherDevices = append(otherDevices, device.Name)
+	}
+	if len(ethernetDevices) > 0 {
+		return ethernetDevices[0], nil
+	}
+	if len(wifiDevices) > 0 {
+		return wifiDevices[0], nil
+	}
+	if len(otherDevices) > 0 {
+		return otherDevices[0], nil
 	}
 	return "", fmt.Errorf("no suitable device found")
 }

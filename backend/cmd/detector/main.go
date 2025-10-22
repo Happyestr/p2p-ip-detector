@@ -50,7 +50,7 @@ func main() {
 	analyzer := analyzer.NewP2PAnalyzer(localIPs)
 	webServer := api.NewServer(analyzer)
 	go func() {
-		if err := webServer.Start("localhost:8080"); err != nil {
+		if err := webServer.Start("localhost:8081"); err != nil {
 			log.Fatal("Server start error:", err)
 		}
 	}()

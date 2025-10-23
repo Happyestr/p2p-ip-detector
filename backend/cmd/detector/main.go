@@ -18,7 +18,6 @@ func main() {
 	webAddr := os.Getenv("WEB")
 	if listDevices {
 		printDevices()
-		return
 	}
 	if deviceName == "" {
 		device, err := capture.AutoDetectDevice()

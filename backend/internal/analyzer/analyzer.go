@@ -21,7 +21,7 @@ type P2PAnalyzer struct {
 	onDetected  func(P2PConnection)
 }
 
-func NewP2PAnalyzer(localIPs []string) *P2PAnalyzer {
+func New(localIPs []string) *P2PAnalyzer {
 	localIPMap := make(map[string]bool)
 	for _, ip := range localIPs {
 		localIPMap[ip] = true
@@ -46,11 +46,9 @@ func NewP2PAnalyzer(localIPs []string) *P2PAnalyzer {
 
 func (a *P2PAnalyzer) AnalyzePacket(pkt capture.PacketInfo) {
 	if !isStunPacket(pkt.Data) { // проверка стан пакет ли (если нет то не относится)
-		// fmt.Println("Не STUN пакет")
 		return
 	}
 	if isStunServerPacket(pkt.Data) { // фильтрация пакетов от стан серверов по содержимому (уже не надо т.к входящие не получаю)
-		// fmt.Printf("STUN сервер: %s\n", pkt.SrcIP)
 		return
 	}
 	if isStunServerPort(pkt.DstPort) || isStunServerPort(pkt.SrcPort) { //фильтрация стан серверов по порту

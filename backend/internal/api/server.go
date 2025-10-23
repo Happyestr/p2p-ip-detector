@@ -19,7 +19,7 @@ type Server struct {
 	upgrader websocket.Upgrader
 }
 
-func NewServer(analyzer *analyzer.P2PAnalyzer) *Server {
+func New(analyzer *analyzer.P2PAnalyzer) *Server {
 	s := &Server{
 		analyzer: analyzer,
 		clients:  make(map[*websocket.Conn]bool),

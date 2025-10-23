@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -14,53 +13,43 @@ import (
 )
 
 func main() {
-	deviceName := flag.String("device", "", "Network device to capture packets")
-	listDevices := flag.Bool("list-devices", false, "List available network devices")
-	autoDetect := flag.Bool("auto", false, "Automatically detect network device")
-	debug := flag.Bool("debug", false, "Enable debug mode with packet logging")
-	flag.Parse()
-	if *listDevices {
+	deviceName := os.Getenv("DEVICE")
+	listDevices := os.Getenv("LIST_DEVICES") == "true"
+	webAddr := os.Getenv("WEB")
+	if listDevices {
 		printDevices()
 		return
 	}
-	if *autoDetect {
+	if deviceName == "" {
 		device, err := capture.AutoDetectDevice()
 		if err != nil {
 			log.Fatal(err)
 		}
-		*deviceName = device
+		deviceName = device
 		log.Println("Auto-detected device:", device)
 	}
-	if *deviceName == "" {
+	if deviceName == "" {
 		log.Fatal("No device specified")
-	}
-	if *debug {
-		log.Println("Debug mode enabled")
 	}
 
 	localIPs, err := getLocalIPsFromDevices()
 	if err != nil {
 		log.Fatal("Error getting local IPs:", err)
 	}
-	// fmt.Println(localIPs)
-	// analyzer := analyzer.NewP2PAnalyzer(localIPs)
-
-	// fmt.Println(analyzer)
-	// go packetCapture.Start()
-	analyzer := analyzer.NewP2PAnalyzer(localIPs)
-	webServer := api.NewServer(analyzer)
+	fmt.Println(localIPs)
+	analyzer := analyzer.New(localIPs)
+	webServer := api.New(analyzer)
 	go func() {
-		if err := webServer.Start("localhost:8081"); err != nil {
+		if err := webServer.Start(webAddr); err != nil {
 			log.Fatal("Server start error:", err)
 		}
 	}()
-	packetCapture, err := capture.NewPacketCapture(*deviceName)
+	packetCapture, err := capture.New(deviceName)
 	if err != nil {
 		log.Fatal("Error starting packet capture:", err)
 	}
 	defer packetCapture.Close()
 	packetCapture.OnPacket(func(pkt capture.PacketInfo) {
-		// fmt.Printf("%s %d \t %s %d          %d\n", pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort, len(pkt.Data))
 		analyzer.AnalyzePacket(pkt)
 	})
 	go packetCapture.Start()
@@ -98,7 +87,6 @@ func printDevices() {
 	if err != nil {
 		log.Fatal("Error listing devices:", err)
 	}
-	// fmt.Println(devices)
 	for _, device := range devices {
 		if len(device.Addresses) != 0 && device.Addresses[0].IP != nil && !device.Addresses[0].IP.IsLoopback() {
 			fmt.Println(device.Name)

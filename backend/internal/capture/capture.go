@@ -23,8 +23,13 @@ type PacketCapture struct {
 	onPacket   func(PacketInfo)
 }
 
-func NewPacketCapture(deviceName string) (*PacketCapture, error) {
-	handle, err := pcap.OpenLive(deviceName, 65536, true, pcap.BlockForever)
+const (
+	PacketBufferSize = 65536
+	PromiscuousMode  = true
+)
+
+func New(deviceName string) (*PacketCapture, error) {
+	handle, err := pcap.OpenLive(deviceName, PacketBufferSize, PromiscuousMode, pcap.BlockForever)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open device %s: %v", deviceName, err)
 	}
@@ -44,9 +49,9 @@ func AutoDetectDevice() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var ethernetDevices []string
-	var wifiDevices []string
-	var otherDevices []string
+	ethernetDevices := make([]string, 0, 2)
+	wifiDevices := make([]string, 0, 2)
+	otherDevices := make([]string, 0, 10)
 	for _, device := range devices {
 		if len(device.Addresses) == 0 || device.Addresses[0].IP == nil || device.Addresses[0].IP.IsLoopback() {
 			continue
@@ -97,16 +102,11 @@ func AutoDetectDevice() (string, error) {
 func (pc *PacketCapture) Start() {
 	packetSource := gopacket.NewPacketSource(pc.handle, pc.handle.LinkType())
 	for packet := range packetSource.Packets() {
-		// fmt.Println(pc.extractPacketInfo(packet))
 		info := pc.extractPacketInfo(packet)
 		if info != nil && pc.onPacket != nil {
 			pc.onPacket(*info)
 		}
 	}
-	// packetSource := gopacket.NewPacketSource(pc.handle, pc.handle.LinkType())
-	// for packet := range packetSource.Packets() {
-	// 	// Обработка пакета
-	// }
 }
 
 func (pc *PacketCapture) extractPacketInfo(packet gopacket.Packet) *PacketInfo {
@@ -126,8 +126,6 @@ func (pc *PacketCapture) extractPacketInfo(packet gopacket.Packet) *PacketInfo {
 	if !ok {
 		return nil
 	}
-	// fmt.Println(ipLayer.DstIP, ipLayer.SrcIP)
-	// fmt.Println(udpLayer.SrcPort, udpLayer.DstPort, udpLayer.Payload)
 	return &PacketInfo{
 		SrcIP:   ip.SrcIP.String(),
 		DstIP:   ip.DstIP.String(),

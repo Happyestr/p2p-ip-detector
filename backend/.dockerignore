@@ -1,0 +1,12 @@
+
+.git
+*.swp
+*.tmp
+*.log
+node_modules
+bin/
+*.exe
+*.out
+*.test
+.vscode
+.idea

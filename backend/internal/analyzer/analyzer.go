@@ -48,25 +48,27 @@ func (a *P2PAnalyzer) AnalyzePacket(pkt capture.PacketInfo) {
 	if !isStunPacket(pkt.Data) { // проверка стан пакет ли (если нет то не относится)
 		return
 	}
-	if isStunServerPacket(pkt.Data) { // фильтрация пакетов от стан серверов по содержимому (уже не надо т.к входящие не получаю)
+	if a.localIPs[pkt.SrcIP] || !a.localIPs[pkt.DstIP] { // проверка что пакет направлен на локальный IP
+		return
+	}
+	if isStunServerPacket(pkt.Data) { // фильтрация пакетов от стан серверов по содержимому
+		fmt.Println("Stun server", pkt.SrcIP, pkt.SrcPort)
 		return
 	}
 	if isStunServerPort(pkt.DstPort) || isStunServerPort(pkt.SrcPort) { //фильтрация стан серверов по порту
 		return
 	}
-	if !a.localIPs[pkt.SrcIP] || a.localIPs[pkt.DstIP] {
-		return
-	}
+	// fmt.Println(pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort)
 	key := fmt.Sprintf("%s:%d", pkt.DstIP, pkt.DstPort)
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	conn, exists := a.connections[key]
 	if !exists {
 		conn = &P2PConnection{
-			PeerIP:      pkt.DstIP,
-			PeerPort:    pkt.DstPort,
-			LocalIP:     pkt.SrcIP,
-			LocalPort:   pkt.SrcPort,
+			PeerIP:      pkt.SrcIP,
+			PeerPort:    pkt.SrcPort,
+			LocalIP:     pkt.DstIP,
+			LocalPort:   pkt.DstPort,
 			PacketCount: 0,
 		}
 		a.connections[key] = conn

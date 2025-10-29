@@ -18,7 +18,6 @@ func main() {
 	webAddr := os.Getenv("WEB")
 	if listDevices {
 		printDevices()
-		return
 	}
 	if deviceName == "" {
 		device, err := capture.AutoDetectDevice()
@@ -33,6 +32,7 @@ func main() {
 	}
 
 	localIPs, err := getLocalIPsFromDevices()
+	localIPs = append(localIPs, "10.10.10.2") // Добавляем локальный IP (WireGuard)
 	if err != nil {
 		log.Fatal("Error getting local IPs:", err)
 	}
@@ -50,6 +50,7 @@ func main() {
 	}
 	defer packetCapture.Close()
 	packetCapture.OnPacket(func(pkt capture.PacketInfo) {
+		// fmt.Println(pkt.SrcIP, pkt.DstIP)
 		analyzer.AnalyzePacket(pkt)
 	})
 	go packetCapture.Start()

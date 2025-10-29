@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8081:8081"
+    env_file:
+      - ./backend/.env
     # environment:
     #   - VAR=VALUE
 

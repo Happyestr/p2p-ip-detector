@@ -20,14 +20,6 @@ func main() {
 		printDevices()
 	}
 	if deviceName == "" {
-		device, err := capture.AutoDetectDevice()
-		if err != nil {
-			log.Fatal(err)
-		}
-		deviceName = device
-		log.Println("Auto-detected device:", device)
-	}
-	if deviceName == "" {
 		log.Fatal("No device specified")
 	}
 
